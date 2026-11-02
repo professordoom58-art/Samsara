@@ -1,0 +1,25 @@
+# Temporary package archive from the build script; keep the distributable WPK.
+/dist/*.zip
+
+# Local audio test files are user-provided media, not project source.
+/public/*.mp3
+/public/*.flac
+/public/*.wav
+/public/*.m4a
+/public/*.aac
+/public/*.ogg
+/public/*.opus
+/public/*.wma
+
+# Installed dependencies
+/node_modules/
+
+# Temporary files and logs
+*.log
+*.tmp
+*.bak
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+desktop.ini

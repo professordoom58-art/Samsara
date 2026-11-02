@@ -1,0 +1,25 @@
+{
+  "name": "SAMSARA",
+  "description": "Offline-first music player for KaiOS",
+  "launch_path": "/index.html",
+  "type": "privileged",
+  "orientation": "landscape-primary",
+  "fullscreen": true,
+  "version": "0.1.0",
+  "developer": {
+    "name": "SAMSARA"
+  },
+  "permissions": {
+    "device-storage:music": {
+      "access": "readonly",
+      "description": "Scan local music files"
+    },
+    "device-storage:sdcard": {
+      "access": "readonly",
+      "description": "Scan music files on removable storage"
+    },
+    "audio-channel-content": {
+      "description": "Continue music playback as content audio"
+    }
+  }
+}
