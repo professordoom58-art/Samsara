@@ -62,7 +62,7 @@ var state = {
 sandbox.SonoraPlayer.init(audio, state, {});
 assert.strictEqual(sandbox.SonoraPlayer.isEqualizerAvailable(), true);
 sandbox.SonoraPlayer.setEqualizer({ enabled: true, preamp: 2, bands: [6, 3, 0, -2, -4] });
-assert.deepStrictEqual(filters.map(function (item) { return item.frequency.value; }), [60, 250, 1000, 4000, 12000]);
+assert.deepStrictEqual(filters.map(function (item) { return item.frequency.value; }), [60, 230, 910, 3600, 14000]);
 assert.deepStrictEqual(filters.map(function (item) { return item.gain.value; }), [6, 3, 0, -2, -4]);
 assert.strictEqual(preamp.gain.value, 2);
 assert.strictEqual(connections.length, 7);

@@ -88,6 +88,11 @@ assert.strictEqual(sandbox.SonoraPlayer.toggleFavourite(), true);
 assert.strictEqual(sandbox.SonoraPlayer.isFavourite(track), true);
 sandbox.SonoraPlayer.toggleShuffle();
 assert.strictEqual(state.shuffle, true);
+assert.strictEqual(sandbox.SonoraPlayer.getQueue()[0], track);
+assert.strictEqual(
+  JSON.stringify(sandbox.SonoraPlayer.getQueue().map(function (item) { return item.id; }).sort()),
+  JSON.stringify([track.id, flac.id].sort())
+);
 sandbox.SonoraPlayer.cycleRepeat();
 assert.strictEqual(state.repeat, "all");
 var playlist = sandbox.SonoraPlayer.createPlaylist("Road trip");
@@ -103,6 +108,10 @@ assert.strictEqual(sandbox.SonoraPlayer.getQueue().length, 2);
 assert.strictEqual(sandbox.SonoraPlayer.moveQueueItem(1, 0), true);
 assert.strictEqual(sandbox.SonoraPlayer.getQueue()[0], secondTrack);
 assert.strictEqual(sandbox.SonoraPlayer.getCurrentIndex(), 1);
+sandbox.SonoraPlayer.next();
+assert.strictEqual(sandbox.SonoraPlayer.getCurrentTrack(), secondTrack);
+sandbox.SonoraPlayer.setVolume(0.49);
+assert.strictEqual(audio.volume, 0.5);
 assert.strictEqual(sandbox.SonoraPlayer.playTrack(flac, 0), false);
 assert.strictEqual(unsupportedMessage, true);
 assert.strictEqual(saved.repeat, "all");

@@ -23,4 +23,4 @@ Read [README.md](README.md) for the project goals, target constraints, and verif
 
 ## Current repository status
 
-The project has a vanilla HTML/CSS/JavaScript KaiOS app, a PowerShell WPK packaging script, and dependency-free Node.js smoke tests. Metadata parsing, library views, playlists, queue controls, playback, and a Web Audio EQ are implemented. FLAC audio decoding is not integrated, and KaiOS/JioPhone-specific behavior remains unverified without a physical device. See `README.md` for current build and test commands; do not treat browser tests as proof of device support.
+The project is a vanilla HTML/CSS/JavaScript KaiOS app with a fixed 320 × 240 player/library/settings UI, a PowerShell WPK packager, local audio import, IndexedDB file persistence, and dependency-free Node.js tests. Metadata parsing, DeviceStorage scanning, playback controls, saved playlists/state, and five-band Web Audio EQ are implemented. FLAC audio decoding is not integrated, and KaiOS/JioPhone-specific behavior remains unverified without a physical device. See `README.md` for build/test commands; do not treat browser tests as proof of device support.

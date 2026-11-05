@@ -49,6 +49,7 @@ button {
 }
 
 .section-heading {
+  position: relative;
   display: flex;
   height: 25px;
   align-items: baseline;
@@ -627,4 +628,766 @@ body.now-playing-active .player-card {
     border-right: 1px solid #282e35;
     border-left: 1px solid #282e35;
   }
+}
+
+/* KaiOS-sized Nothing OS presentation */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  image-rendering: pixelated;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  font-family: "Roboto Condensed", "Arial Narrow", Arial, sans-serif;
+}
+
+.app-shell {
+  position: relative;
+  display: grid;
+  width: 320px;
+  height: 240px;
+  max-width: none;
+  grid-template-rows: 20px minmax(0, 1fr) 24px;
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+  border: 0;
+}
+
+.status-bar,
+.softkey-bar {
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  background: #000;
+  color: #fff;
+  font: 10px/1 "JetBrains Mono", Consolas, monospace;
+}
+
+.status-bar {
+  border-bottom: 1px solid #262626;
+}
+
+.status-network,
+.status-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.signal-bars {
+  display: inline-flex;
+  height: 10px;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.signal-bars i {
+  display: block;
+  width: 2px;
+  background: #fff;
+}
+
+.signal-bars i:nth-child(1) { height: 3px; }
+.signal-bars i:nth-child(2) { height: 5px; }
+.signal-bars i:nth-child(3) { height: 7px; }
+.signal-bars i:nth-child(4) { height: 9px; }
+
+.battery-icon {
+  position: relative;
+  display: inline-block;
+  width: 15px;
+  height: 8px;
+  border: 1px solid #aaa;
+}
+
+.battery-icon::after {
+  position: absolute;
+  top: 2px;
+  right: -3px;
+  width: 2px;
+  height: 3px;
+  background: #aaa;
+  content: "";
+}
+
+.battery-level {
+  display: block;
+  width: 68%;
+  height: 100%;
+  background: #fff;
+}
+
+.presentation-toggle {
+  width: 15px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #777;
+  font-size: 13px;
+}
+
+.screen {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  padding: 6px 8px;
+  background: #000;
+}
+
+.screen-library,
+.screen-settings {
+  display: flex;
+  flex-direction: column;
+}
+
+.matrix-heading {
+  display: flex;
+  height: 26px;
+  min-height: 26px;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid #262626;
+}
+
+.matrix-title {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  color: #fff;
+  font-family: "DotGothic16", "Arial Narrow", Consolas, monospace;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1.15px;
+  line-height: 18px;
+  text-transform: uppercase;
+}
+
+.library-heading .matrix-title {
+  font-size: 13px;
+}
+
+.heading-note,
+.settings-heading-icon {
+  width: 14px;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+}
+
+.track-counter {
+  color: #999;
+  font: 9px/1 "JetBrains Mono", Consolas, monospace;
+}
+
+.matrix-track-list {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  padding-right: 4px;
+}
+
+.matrix-track-row {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 26px;
+  min-height: 26px;
+  align-items: center;
+  gap: 9px;
+  padding: 2px 6px;
+  border: 1.5px solid transparent;
+  border-bottom-color: #1f1f1f;
+  border-radius: 6px;
+  background: #000;
+  color: #fff;
+  text-align: left;
+}
+
+.matrix-scrollbar {
+  position: absolute;
+  top: 3px;
+  right: 0;
+  bottom: 3px;
+  width: 3px;
+  background: #222;
+}
+
+.matrix-scroll-thumb {
+  position: absolute;
+  right: 0;
+  left: 0;
+  min-height: 12px;
+  background: #ff1e1e;
+}
+
+.matrix-track-row.focused,
+.matrix-track-row:focus,
+.matrix-track-row:focus-visible {
+  border-color: #ff1e1e;
+  background: rgba(255, 30, 30, 0.08);
+  outline: 0;
+}
+
+.matrix-track-number {
+  width: 23px;
+  flex: 0 0 23px;
+  color: #999;
+  font: 10px/1 "JetBrains Mono", Consolas, monospace;
+  text-align: center;
+}
+
+.matrix-track-row.focused .matrix-track-number {
+  color: #ff1e1e;
+}
+
+.matrix-track-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.matrix-track-title,
+.matrix-track-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matrix-track-title {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.matrix-track-artist {
+  color: #888;
+  font-size: 9px;
+}
+
+.playing-equalizer {
+  display: inline-block;
+  color: #ff1e1e;
+  font-size: 11px;
+  letter-spacing: -2px;
+  animation: eq-pulse 650ms steps(3, end) infinite alternate;
+}
+
+@keyframes eq-pulse {
+  from { transform: scaleY(.65); }
+  to { transform: scaleY(1.15); }
+}
+
+.matrix-empty {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #888;
+  font-size: 10px;
+  text-align: center;
+}
+
+.matrix-empty strong {
+  color: #fff;
+  font: 12px "DotGothic16", Consolas, monospace;
+  letter-spacing: 1px;
+}
+
+@supports (-webkit-background-clip: text) {
+  .matrix-title,
+  .now-track-title,
+  .matrix-empty strong {
+    color: transparent;
+    background-image: radial-gradient(circle, #fff .65px, transparent .85px);
+    background-size: 3px 3px;
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
+
+.load-music-inline {
+  padding: 5px 10px;
+  border: 1px solid #555;
+  border-radius: 5px;
+  background: #111;
+  color: #fff;
+  font-size: 10px;
+}
+
+.now-playing-view {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-rows: 78px 22px 39px minmax(20px, 1fr);
+  align-content: stretch;
+  gap: 3px;
+  padding: 3px 4px 2px;
+  background: #000;
+}
+
+.now-upper {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.artwork-wrap {
+  position: relative;
+  display: flex;
+  width: 92px;
+  height: 76px;
+  flex: 0 0 92px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.artwork-dots {
+  position: absolute;
+  left: 1px;
+  width: 12px;
+  height: 44px;
+  background-image: radial-gradient(circle, #444 1px, transparent 1.3px);
+  background-size: 4px 6px;
+}
+
+.artwork-frame {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  background-color: #050505;
+}
+
+.artwork-frame::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image:
+    linear-gradient(#fff, #fff), linear-gradient(#fff, #fff),
+    linear-gradient(#fff, #fff), linear-gradient(#fff, #fff),
+    linear-gradient(#fff, #fff), linear-gradient(#fff, #fff),
+    linear-gradient(#fff, #fff), linear-gradient(#fff, #fff);
+  background-position: left top, left top, right top, right top, left bottom, left bottom, right bottom, right bottom;
+  background-repeat: no-repeat;
+  background-size: 8px 1.5px, 1.5px 8px, 8px 1.5px, 1.5px 8px, 8px 1.5px, 1.5px 8px, 8px 1.5px, 1.5px 8px;
+  content: "";
+  pointer-events: none;
+}
+
+.artwork-cover {
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: 68px;
+  height: 68px;
+  object-fit: cover;
+}
+
+.dot-sphere {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 49px;
+  height: 49px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 65% 35%, transparent 0 24%, #000 25% 28%, transparent 29%),
+    radial-gradient(circle, #bbb 0.9px, transparent 1.3px);
+  background-position: center, center;
+  background-size: 100% 100%, 4px 4px;
+  mask-image: radial-gradient(circle, #000 58%, transparent 60%);
+  -webkit-mask-image: radial-gradient(circle, #000 58%, transparent 60%);
+}
+
+.sphere-accent {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ff1e1e;
+}
+
+.now-track-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.now-track-title {
+  overflow: hidden;
+  margin: 0 0 5px;
+  color: #fff;
+  font: 500 15px/18px "DotGothic16", "Arial Narrow", Consolas, monospace;
+  letter-spacing: .8px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.now-track-artist {
+  overflow: hidden;
+  margin: 0 0 6px;
+  color: #999;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playback-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: #ff1e1e;
+  font: 9px "JetBrains Mono", Consolas, monospace;
+  letter-spacing: 1px;
+}
+
+.playback-status-icon {
+  color: #ff1e1e;
+  font-size: 10px;
+}
+
+.now-progress-row {
+  display: grid;
+  grid-template-columns: 31px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-time {
+  color: #fff;
+  font: 9px "JetBrains Mono", Consolas, monospace;
+  white-space: nowrap;
+}
+
+.progress-time:last-child {
+  text-align: right;
+}
+
+.now-seek {
+  width: 100%;
+  height: 4px;
+  margin: 0;
+  border-radius: 2px;
+  background: linear-gradient(to right, #ff1e1e 0%, #ff1e1e 0%, #333 0%, #333 100%);
+  accent-color: #ff1e1e;
+}
+
+.now-seek::-webkit-slider-thumb {
+  width: 8px;
+  height: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  -webkit-appearance: none;
+}
+
+.now-seek::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.now-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+}
+
+.now-control {
+  display: flex;
+  width: 28px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: #1a1a1a;
+  color: #fff;
+  font: 15px "JetBrains Mono", Consolas, monospace;
+}
+
+.now-control:first-child,
+.now-control:last-child {
+  width: 22px;
+  background: transparent;
+  font-size: 16px;
+}
+
+.now-control.primary-control {
+  width: 32px;
+  height: 28px;
+}
+
+.now-control.active {
+  color: #ff1e1e;
+}
+
+.now-control.focused,
+.now-control:focus,
+.now-control:focus-visible,
+.now-seek:focus {
+  border-color: #ff1e1e;
+  outline: 0;
+  box-shadow: 0 0 0 1px rgba(255, 30, 30, .45);
+}
+
+.volume-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.volume-label {
+  color: #ccc;
+  font: 9px "JetBrains Mono", Consolas, monospace;
+  white-space: nowrap;
+}
+
+.volume-meter {
+  display: flex;
+  width: 132px;
+  height: 16px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.volume-segment {
+  display: block;
+  width: 7px;
+  height: 10px;
+  border-radius: 3px;
+  background: #333;
+}
+
+.volume-segment.active {
+  background: #fff;
+}
+
+.screen-settings {
+  position: relative;
+  background:
+    radial-gradient(circle, #333 1px, transparent 1.3px) right bottom / 8px 8px,
+    #000;
+}
+
+.settings-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.settings-card {
+  display: flex;
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px;
+  border: 1.5px solid #333;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .92);
+  color: #ccc;
+  text-align: left;
+}
+
+.settings-card.focused,
+.settings-card:focus,
+.settings-card:focus-visible {
+  border-color: #ff1e1e;
+  color: #fff;
+  outline: 0;
+}
+
+.settings-card-icon {
+  width: 20px;
+  color: inherit;
+  font-size: 18px;
+  text-align: center;
+}
+
+.settings-card-label {
+  flex: 1;
+  font: 11px "JetBrains Mono", Consolas, monospace;
+  letter-spacing: 1.1px;
+}
+
+.settings-card-chevron {
+  color: #888;
+  font: 16px Consolas, monospace;
+}
+
+.softkey-bar {
+  min-height: 24px;
+  border-top: 1px solid #262626;
+}
+
+.softkey {
+  width: 68px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: 9px "JetBrains Mono", Consolas, monospace;
+}
+
+.softkey:first-child { text-align: left; }
+.softkey:last-child { text-align: right; }
+
+.dpad-indicator {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #777;
+  border-radius: 4px;
+  transform: rotate(45deg);
+}
+
+.dpad-indicator::after {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 2px;
+  height: 2px;
+  background: #aaa;
+  content: "";
+}
+
+.status-message {
+  right: 12px;
+  bottom: 30px;
+  left: 12px;
+  padding: 6px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, .96);
+  color: #fff;
+  font: 9px "JetBrains Mono", Consolas, monospace;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.presentation-board-mode {
+  display: block;
+  overflow: auto;
+  background: #161616;
+}
+
+.presentation-board-mode .app-shell {
+  display: block;
+  width: max-content;
+  height: auto;
+  max-width: none;
+  margin: 28px auto;
+  overflow: visible;
+  background: transparent;
+}
+
+.presentation-board-mode > .app-shell > .status-bar,
+.presentation-board-mode > .app-shell > .softkey-bar {
+  display: none;
+}
+
+.presentation-board-mode .screen.board-host {
+  width: max-content;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+  background: transparent;
+}
+
+.presentation-board {
+  display: flex;
+  width: max-content;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.device-preview {
+  position: relative;
+  display: grid;
+  width: 320px;
+  height: 240px;
+  flex: 0 0 320px;
+  grid-template-rows: 20px minmax(0, 1fr) 24px;
+  overflow: visible;
+  border: 1px solid #444;
+  background: #000;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .55);
+}
+
+.preview-label {
+  position: absolute;
+  top: -17px;
+  left: 0;
+  color: #aaa;
+  font: 9px "JetBrains Mono", Consolas, monospace;
+  letter-spacing: 1px;
+}
+
+.device-preview .screen {
+  min-height: 0;
+  padding: 6px 8px;
+}
+
+.device-preview .screen-player {
+  padding: 3px 4px 2px;
+}
+
+body.now-playing-active .app-shell {
+  width: 320px;
+  height: 240px;
+  grid-template-rows: 20px minmax(0, 1fr) 24px;
 }

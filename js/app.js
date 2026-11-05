@@ -2,10 +2,13 @@
   "use strict";
 
   var screen = document.getElementById("screen");
+  var appScreen = screen;
   var audio = document.getElementById("audio");
   var status = document.getElementById("status-message");
+  var filePicker = document.getElementById("music-file-picker");
   var state = SonoraStorage.load();
   var tracks = [];
+  var persistedTracks = [];
   var activeScreen = "library";
   var searchTerm = "";
   var sortBy = "title";
@@ -14,6 +17,18 @@
   var selectedPlaylistId = null;
   var selectedGroup = null;
   var artworkUrls = [];
+  var focusedTrackIndex = 0;
+  var focusedSettingIndex = 0;
+  var playerFocusIndex = 2;
+  var presentationBoard = false;
+  var importedTrackIds = {};
+  var playerPresets = {
+    "Flat": [0, 0, 0, 0, 0],
+    "Bass Boost": [7, 5, 1, 0, 0],
+    "Vocal": [-2, 1, 4, 3, 1],
+    "Nothing Dot": [4, -2, 3, -2, 4],
+    "Treble": [-1, 0, 2, 5, 7]
+  };
 
   function setStatus(message) {
     status.textContent = message;
@@ -136,77 +151,59 @@
   }
 
   function renderLibrary() {
-    var heading = makeElement("div", "section-heading");
-    var input = makeElement("input", "search");
-    var filtered = visibleTracks().sort(SonoraLibrary.compareBy(sortBy));
-    var tools = makeElement("div", "library-tools");
-    var links = makeElement("div", "library-links");
-    var list = makeElement("div", "track-list library-track-list");
-    var actions = [
-      ["Favourites", "favorites"],
-      ["Recent", "recent"],
-      ["Most played", "most-played"],
-      ["Artists", "artists"],
-      ["Albums", "albums"],
-      ["Folders", "folders"],
-      ["Queue", "queue"]
-    ];
+    var heading = makeElement("div", "matrix-heading library-heading");
+    var list = makeElement("div", "matrix-track-list");
+    var title = makeElement("h1", "matrix-title");
+    var note = makeElement("span", "heading-note", "\u266B");
+    var indexLabel = makeElement("span", "track-counter");
+    var visible = tracks.slice().sort(SonoraLibrary.compareTracks);
+    var currentIndex = Math.max(0, Math.min(focusedTrackIndex, Math.max(visible.length - 1, 0)));
+    var first = Math.max(0, Math.min(currentIndex - 2, visible.length - 6));
+    var last = Math.min(visible.length, first + 6);
     var i;
-
-    heading.appendChild(makeElement("h1", "", "Music"));
-    heading.appendChild(makeElement("span", "muted", tracks.length + " tracks"));
+    title.textContent = "MUSIC LIBRARY";
+    heading.appendChild(note);
+    heading.appendChild(title);
+    indexLabel.textContent = visible.length ? (currentIndex + 1) + "/" + visible.length : "0/0";
+    heading.appendChild(indexLabel);
     screen.appendChild(heading);
-    input.type = "search";
-    input.placeholder = "Search title, artist, album";
-    input.setAttribute("aria-label", "Search music library");
-    input.value = searchTerm;
-    tools.appendChild(input);
-    var sort = makeElement("select", "sort-select");
-    sort.setAttribute("aria-label", "Sort tracks");
-    [["title", "Title"], ["artist", "Artist"], ["album", "Album"], ["year", "Year"]].forEach(function (item) {
-      var option = makeElement("option", "", item[1]);
-      option.value = item[0];
-      sort.appendChild(option);
-    });
-    sort.value = sortBy;
-    tools.appendChild(sort);
-    screen.appendChild(tools);
-    sort.addEventListener("change", function () {
-      sortBy = sort.value;
-      render();
-    });
-    for (i = 0; i < actions.length; i += 1) {
-      var link = makeButton(actions[i][0], "navigate", "library-link");
-      link.setAttribute("data-screen", actions[i][1]);
-      links.appendChild(link);
-    }
-    screen.appendChild(links);
-    screen.appendChild(list);
-
-    input.addEventListener("input", function () {
-      searchTerm = input.value;
-      render();
-      var nextInput = document.querySelector(".search");
-      nextInput.focus();
-      nextInput.setSelectionRange(searchTerm.length, searchTerm.length);
-    });
-
-    if (!filtered.length) {
-      if (tracks.length) {
-        list.appendChild(makeElement("div", "empty-state", "No matching tracks."));
-      } else {
-        var empty = makeElement("div", "empty-state");
-        empty.appendChild(makeElement("strong", "", "No tracks found"));
-        empty.appendChild(makeElement("span", "", "Scan local music storage to build your library."));
-        empty.appendChild(makeButton("Rescan storage", "scan", "action-button"));
-        list.appendChild(empty);
+    if (!visible.length) {
+      var empty = makeElement("div", "matrix-empty");
+      empty.appendChild(makeElement("strong", "", "NO MUSIC LOADED"));
+      empty.appendChild(makeElement("span", "", "Load audio files or scan device storage."));
+      empty.appendChild(makeButton("Load music", "load-music", "load-music-inline"));
+      list.appendChild(empty);
+    } else {
+      for (i = first; i < last; i += 1) {
+        var track = visible[i];
+        var row = makeButton("", "select-track", "matrix-track-row" + (i === currentIndex ? " focused" : ""));
+        var playing = track.id === (SonoraPlayer.getCurrentTrack() || {}).id;
+        var number = makeElement("span", "matrix-track-number", ("0" + (i + 1)).slice(-2));
+        var copy = makeElement("span", "matrix-track-copy");
+        copy.appendChild(makeElement("span", "matrix-track-title", track.title));
+        copy.appendChild(makeElement("span", "matrix-track-artist", track.artist));
+        row.setAttribute("data-track-id", track.id);
+        row.setAttribute("data-index", String(tracks.indexOf(track)));
+        row.setAttribute("data-visible-index", String(i));
+        row.appendChild(number);
+        row.appendChild(copy);
+        if (playing) {
+          row.appendChild(makeElement("span", "playing-equalizer", "\u2582\u2585\u2583\u2586"));
+        }
+        list.appendChild(row);
       }
-      return;
+      if (visible.length > 6) {
+        var scrollbar = makeElement("span", "matrix-scrollbar");
+        var thumb = makeElement("span", "matrix-scroll-thumb");
+        var thumbHeight = Math.max(14, 100 * 6 / visible.length);
+        thumb.style.height = thumbHeight + "%";
+        thumb.style.top = ((100 - thumbHeight) * currentIndex / Math.max(1, visible.length - 1)) + "%";
+        scrollbar.appendChild(thumb);
+        list.appendChild(scrollbar);
+      }
     }
-    for (i = 0; i < filtered.length; i += 1) {
-      var trackItem = makeTrackRow(filtered[i], tracks.indexOf(filtered[i]), i + 1, true);
-      list.appendChild(trackItem);
-    }
+    screen.appendChild(list);
+    screen.className = "screen screen-library";
   }
 
   function getArtworkUrl(track) {
@@ -222,86 +219,93 @@
 
   function renderPlayer() {
     var track = SonoraPlayer.getCurrentTrack();
-    var controls;
-    var info;
-    var playback;
-    var timeRow;
-    var seek;
     var playerState = SonoraPlayer.getState();
     var currentTime = audio.currentTime || 0;
     var duration = isFinite(audio.duration) ? audio.duration : 0;
-
-    if (!track) {
-      showEmpty("Nothing playing", "Choose a track from your library.", false);
-      return;
-    }
-
-    var wrapper = makeElement("section", "player-card");
-    var artworkUrl = getArtworkUrl(track);
+    var wrapper = makeElement("section", "now-playing-view");
+    var upper = makeElement("div", "now-upper");
+    var artworkWrap = makeElement("div", "artwork-wrap");
+    var artwork = makeElement("div", "artwork-frame");
+    var artworkUrl = track ? getArtworkUrl(track) : "";
+    var info = makeElement("div", "now-track-info");
+    var title = makeElement("h1", "now-track-title", track ? track.title : "NO TRACK");
+    var artist = makeElement("p", "now-track-artist", track ? track.artist : "Load music to begin");
+    var statusLine = makeElement("p", "playback-status");
+    var statusIcon = makeElement("span", "playback-status-icon", audio.paused ? "\u25B6" : "\u25B6");
+    statusLine.appendChild(statusIcon);
+    statusLine.appendChild(document.createTextNode(audio.paused ? "PAUSED" : "PLAYING"));
+    artworkWrap.appendChild(makeElement("span", "artwork-dots", ""));
     if (artworkUrl) {
-      wrapper.style.backgroundImage = "linear-gradient(90deg, rgba(12, 24, 31, .75), rgba(17, 31, 39, .24)), url(\"" + artworkUrl + "\")";
-      wrapper.className += " has-artwork";
+      var cover = makeElement("img", "artwork-cover");
+      cover.src = artworkUrl;
+      cover.alt = "";
+      artwork.appendChild(cover);
+      artwork.className += " has-cover";
+    } else {
+      artwork.appendChild(makeElement("span", "dot-sphere", ""));
+      artwork.appendChild(makeElement("span", "sphere-accent", ""));
     }
-    info = makeElement("div", "player-info");
-    info.appendChild(makeElement("h1", "", track.title));
-    info.appendChild(makeElement("p", "", track.artist));
-    info.appendChild(makeElement("p", "player-album", track.album));
+    artworkWrap.appendChild(artwork);
+    info.appendChild(title);
+    info.appendChild(artist);
+    info.appendChild(statusLine);
+    upper.appendChild(artworkWrap);
+    upper.appendChild(info);
+    wrapper.appendChild(upper);
 
-    var main = makeElement("div", "player-main");
-    main.appendChild(info);
-    var playButton = makeButton(audio.paused ? "▶" : "Ⅱ", "toggle-play", "control primary");
-    playButton.setAttribute("aria-label", audio.paused ? "Play" : "Pause");
-    main.appendChild(playButton);
-    wrapper.appendChild(main);
-
-    controls = makeElement("div", "player-actions");
-    var favourite = SonoraPlayer.isFavourite(track);
-    var favouriteButton = makeButton(favourite ? "♥" : "＋", "favourite", "control action-icon");
-    favouriteButton.setAttribute("aria-label", favourite ? "Remove from favourites" : "Add to favourites");
-    if (favourite) {
-      favouriteButton.className += " selected";
-    }
-    controls.appendChild(favouriteButton);
-
-    var previousButton = makeButton("|‹", "previous", "control action-icon");
-    previousButton.setAttribute("aria-label", "Previous track");
-    controls.appendChild(previousButton);
-
-    var progress = makeElement("div", "player-progress");
-    playback = makeElement("div", "playback-bar");
-    seek = makeElement("input", "seek");
+    var progressRow = makeElement("div", "now-progress-row");
+    var elapsed = makeElement("span", "progress-time", formatTime(currentTime));
+    var seek = makeElement("input", "seek now-seek");
+    var remaining = makeElement("span", "progress-time", "-" + formatTime(Math.max(0, duration - currentTime)));
     seek.type = "range";
     seek.min = "0";
     seek.max = String(duration || 100);
     seek.value = String(duration ? Math.min(currentTime, duration) : 0);
-    seek.setAttribute("aria-label", "Playback position");
-    timeRow = makeElement("div", "time-row");
-    var currentLabel = makeElement("span", "", formatTime(currentTime));
-    var durationLabel = makeElement("span", "", formatTime(duration));
-    currentLabel.id = "current-time";
-    durationLabel.id = "duration-time";
     seek.id = "playback-seek";
-    timeRow.appendChild(currentLabel);
-    timeRow.appendChild(durationLabel);
-    playback.appendChild(seek);
-    playback.appendChild(timeRow);
-    progress.appendChild(playback);
-    controls.appendChild(progress);
+    seek.setAttribute("aria-label", "Playback position");
+    seek.setAttribute("data-player-control", "scrubber");
+    seek.style.background = seekBackground(currentTime, duration);
+    elapsed.id = "current-time";
+    remaining.id = "remaining-time";
+    progressRow.appendChild(elapsed);
+    progressRow.appendChild(seek);
+    progressRow.appendChild(remaining);
+    wrapper.appendChild(progressRow);
 
-    var nextButton = makeButton("›|", "next", "control action-icon");
-    nextButton.setAttribute("aria-label", "Next track");
-    controls.appendChild(nextButton);
-    var shuffleButton = makeButton("⌁", "shuffle", "control action-icon" + (playerState.shuffle ? " selected" : ""));
-    shuffleButton.setAttribute("aria-label", playerState.shuffle ? "Shuffle on" : "Shuffle off");
-    controls.appendChild(shuffleButton);
-    var repeatLabel = playerState.repeat === "off" ? "Repeat off" : (playerState.repeat === "all" ? "Repeat all" : "Repeat one");
-    var repeatButton = makeButton("↻", "repeat", "control action-icon" + (playerState.repeat !== "off" ? " selected" : ""));
-    repeatButton.setAttribute("aria-label", repeatLabel);
-    controls.appendChild(repeatButton);
+    var controls = makeElement("div", "now-controls");
+    var controlSpecs = [
+      [playerState.shuffle ? "\u21C4" : "\u21C4", "shuffle", "Shuffle", playerState.shuffle ? " active" : ""],
+      ["|\u25C0", "previous", "Previous", ""],
+      [audio.paused ? "\u25B6" : "\u275A\u275A", "toggle-play", audio.paused ? "Play" : "Pause", " primary-control"],
+      ["\u25B6|", "next", "Next", ""],
+      [playerState.repeat === "one" ? "\u21BB\u2081" : "\u21BB", "repeat", "Repeat " + playerState.repeat, playerState.repeat !== "off" ? " active" : ""]
+    ];
+    var i;
+    for (i = 0; i < controlSpecs.length; i += 1) {
+      var control = makeButton(controlSpecs[i][0], controlSpecs[i][1],
+        "now-control" + controlSpecs[i][3] + (i === playerFocusIndex ? " focused" : ""));
+      control.setAttribute("aria-label", controlSpecs[i][2]);
+      control.setAttribute("data-player-control", String(i));
+      controls.appendChild(control);
+    }
     wrapper.appendChild(controls);
-    screen.appendChild(wrapper);
 
-    seek.addEventListener("change", function () {
+    var volumeRow = makeElement("div", "volume-row");
+    var volumeLabel = makeElement("span", "volume-label", "\u25C1 VOL " + Math.round(playerState.volume * 100) + "%");
+    var volumeMeter = makeElement("button", "volume-meter", "");
+    volumeMeter.type = "button";
+    volumeMeter.setAttribute("data-action", "volume-toggle");
+    volumeMeter.setAttribute("aria-label", "Volume " + Math.round(playerState.volume * 100) + " percent");
+    for (i = 0; i < 14; i += 1) {
+      volumeMeter.appendChild(makeElement("i", i < Math.round(playerState.volume * 14) ? "volume-segment active" : "volume-segment"));
+    }
+    volumeRow.appendChild(volumeLabel);
+    volumeRow.appendChild(volumeMeter);
+    wrapper.appendChild(volumeRow);
+    screen.appendChild(wrapper);
+    screen.className = "screen screen-player";
+
+    seek.addEventListener("input", function () {
       SonoraPlayer.seek(Number(seek.value));
     });
   }
@@ -469,19 +473,17 @@
     var equalizer = SonoraPlayer.getState().equalizer;
     var presets = {
       "Flat": [0, 0, 0, 0, 0],
-      "Bass Boost": [6, 4, 0, 0, 0],
-      "Rock": [5, 3, -1, 2, 4],
-      "Pop": [-1, 2, 5, 2, -1],
-      "Classical": [4, 2, -1, 2, 4],
-      "Jazz": [4, 2, -1, 2, 4],
-      "Vocal": [-2, 1, 4, 3, 0]
+      "Bass Boost": [7, 5, 1, 0, 0],
+      "Vocal": [-2, 1, 4, 3, 1],
+      "Nothing Dot": [4, -2, 3, -2, 4],
+      "Treble": [-1, 0, 2, 5, 7]
     };
     presets.Custom = equalizer.bands.slice();
     var heading = makeElement("div", "section-heading");
     var panel = makeElement("div", "settings-list");
     var toggle = makeElement("input", "eq-toggle");
     var preset = makeElement("select", "search");
-    var names = ["Flat", "Bass Boost", "Rock", "Pop", "Classical", "Jazz", "Vocal", "Custom"];
+    var names = ["Flat", "Bass Boost", "Vocal", "Nothing Dot", "Treble", "Custom"];
     var i;
     heading.appendChild(makeElement("h1", "", "Equalizer"));
     screen.appendChild(heading);
@@ -499,7 +501,7 @@
     }
     preset.value = equalizer.preset;
     panel.appendChild(preset);
-    var frequencies = ["60 Hz", "250 Hz", "1 kHz", "4 kHz", "12 kHz"];
+    var frequencies = ["60 Hz", "230 Hz", "910 Hz", "3.6 kHz", "14 kHz"];
     for (i = 0; i < frequencies.length; i += 1) {
       var band = makeElement("label", "eq-band");
       band.appendChild(makeElement("span", "", frequencies[i]));
@@ -552,65 +554,110 @@
   }
 
   function renderSettings() {
-    var heading = makeElement("div", "section-heading");
-    var cards = makeElement("div", "settings-list");
-    heading.appendChild(makeElement("h1", "", "More"));
+    var heading = makeElement("div", "matrix-heading settings-heading");
+    var cards = makeElement("div", "settings-menu");
+    var headingIcon = makeElement("span", "settings-heading-icon", "\u2699");
+    heading.appendChild(headingIcon);
+    heading.appendChild(makeElement("h1", "matrix-title", "SETTINGS"));
     screen.appendChild(heading);
 
-    var scanCard = makeElement("div", "setting-card");
-    scanCard.appendChild(makeElement("strong", "", "Music library"));
-    scanCard.appendChild(makeElement("p", "", "Scan music and SD-card storage for local audio files."));
-    scanCard.appendChild(makeButton("Rescan library", "scan"));
-    cards.appendChild(scanCard);
+    var equalizer = makeButton("", "select-setting", "settings-card" + (focusedSettingIndex === 0 ? " focused" : ""));
+    equalizer.setAttribute("data-setting-index", "0");
+    equalizer.appendChild(makeElement("span", "settings-card-icon", "\u2261"));
+    equalizer.appendChild(makeElement("span", "settings-card-label", "EQUALIZER"));
+    equalizer.appendChild(makeElement("span", "settings-card-chevron", ">"));
+    cards.appendChild(equalizer);
 
-    var formatCard = makeElement("div", "setting-card");
-    formatCard.appendChild(makeElement("strong", "", "Format status"));
-    formatCard.appendChild(makeElement("p", "", "Playback uses the device's HTML audio codecs. FLAC decoding is not bundled yet. Device codec support has not been verified."));
-    cards.appendChild(formatCard);
-
-    var eqCard = makeElement("div", "setting-card");
-    eqCard.appendChild(makeElement("strong", "", "Audio and library"));
-    var eqButton = makeButton("Equalizer", "navigate", "action-button");
-    eqButton.setAttribute("data-screen", "equalizer");
-    eqCard.appendChild(eqButton);
-    cards.appendChild(eqCard);
-
-    var categories = [
-      ["Artists", "artists"], ["Albums", "albums"], ["Folders", "folders"],
-      ["Recently played", "recent"], ["Most played", "most-played"],
-      ["Favourites", "favorites"], ["Queue", "queue"]
-    ];
-    var categoryCard = makeElement("div", "setting-card");
-    categoryCard.appendChild(makeElement("strong", "", "Browse"));
-    categories.forEach(function (item) {
-      var button = makeButton(item[0], "navigate", "action-button");
-      button.setAttribute("data-screen", item[1]);
-      categoryCard.appendChild(button);
-    });
-    cards.appendChild(categoryCard);
-
-    var volumeCard = makeElement("div", "setting-card");
-    volumeCard.appendChild(makeElement("strong", "", "Volume"));
-    var volume = makeElement("input", "volume-control");
-    volume.type = "range";
-    volume.min = "0";
-    volume.max = "1";
-    volume.step = "0.05";
-    volume.value = String(SonoraPlayer.getState().volume);
-    volume.setAttribute("aria-label", "Playback volume");
-    volume.addEventListener("input", function () {
-      SonoraPlayer.setVolume(Number(volume.value));
-    });
-    volumeCard.appendChild(volume);
-    cards.appendChild(volumeCard);
-
+    var load = makeButton("", "select-setting", "settings-card" + (focusedSettingIndex === 1 ? " focused" : ""));
+    load.setAttribute("data-setting-index", "1");
+    load.appendChild(makeElement("span", "settings-card-icon", "\u25B1"));
+    load.appendChild(makeElement("span", "settings-card-label", "LOAD MUSIC"));
+    load.appendChild(makeElement("span", "settings-card-chevron", ">"));
+    cards.appendChild(load);
     screen.appendChild(cards);
+    screen.className = "screen screen-settings";
+  }
+
+  function updateSoftkeys() {
+    var left = document.getElementById("softkey-left");
+    var right = document.getElementById("softkey-right");
+    var labels = {
+      "now-playing": ["Options", "Back"],
+      library: ["Play", "Back"],
+      settings: ["Select", "Back"],
+      equalizer: ["Select", "Back"]
+    };
+    var current = labels[activeScreen] || ["Select", "Back"];
+    left.textContent = current[0];
+    right.textContent = current[1];
+  }
+
+  function renderDevicePreview(view, label) {
+    var device = makeElement("section", "device-preview");
+    var header = makeElement("header", "status-bar");
+    var network = makeElement("div", "status-network");
+    var clock = makeElement("div", "status-clock");
+    var content = makeElement("main", "screen");
+    var footer = makeElement("footer", "softkey-bar");
+    var left = makeButton(view === "now-playing" ? "Options" : (view === "library" ? "Play" : "Select"), "soft-left", "softkey");
+    var right = makeButton("Back", "soft-right", "softkey");
+    var tag = makeElement("div", "preview-label", label);
+
+    device.setAttribute("data-preview", view);
+    var bars = makeElement("span", "signal-bars", "");
+    var barIndex;
+    for (barIndex = 0; barIndex < 4; barIndex += 1) {
+      bars.appendChild(makeElement("i", ""));
+    }
+    network.appendChild(bars);
+    network.appendChild(makeElement("span", "", "4G"));
+    clock.appendChild(makeElement("span", "", document.getElementById("status-time").textContent));
+    var battery = makeElement("span", "battery-icon", "");
+    battery.appendChild(makeElement("span", "battery-level", ""));
+    clock.appendChild(battery);
+    header.appendChild(network);
+    header.appendChild(clock);
+    footer.appendChild(left);
+    footer.appendChild(makeElement("span", "dpad-indicator", ""));
+    footer.appendChild(right);
+    device.appendChild(tag);
+    device.appendChild(header);
+    device.appendChild(content);
+    device.appendChild(footer);
+
+    screen = content;
+    if (view === "now-playing") {
+      renderPlayer();
+    } else if (view === "settings") {
+      renderSettings();
+    } else {
+      renderLibrary();
+    }
+    screen = appScreen;
+    return device;
+  }
+
+  function renderBoard() {
+    var board = makeElement("div", "presentation-board");
+    board.appendChild(renderDevicePreview("now-playing", "NOW PLAYING"));
+    board.appendChild(renderDevicePreview("library", "MUSIC LIBRARY"));
+    board.appendChild(renderDevicePreview("settings", "SETTINGS"));
+    screen.appendChild(board);
+    screen.className = "screen board-host";
   }
 
   function render() {
     var i;
-    document.body.className = activeScreen === "now-playing" ? "now-playing-active" : "";
+    screen = appScreen;
+    document.body.className = presentationBoard ? "presentation-board-mode" :
+      (activeScreen === "now-playing" ? "now-playing-active" : "");
     screen.textContent = "";
+    screen.className = "screen";
+    if (presentationBoard) {
+      renderBoard();
+      updateSoftkeys();
+      return;
+    }
     if (activeScreen === "now-playing") {
       renderPlayer();
     } else if (activeScreen === "queue") {
@@ -638,28 +685,38 @@
     } else {
       renderLibrary();
     }
-    for (i = 0; i < document.querySelectorAll(".nav-button").length; i += 1) {
-      var button = document.querySelectorAll(".nav-button")[i];
-      var buttonScreen = button.getAttribute("data-screen");
-      var isActive = buttonScreen === activeScreen ||
-        (buttonScreen === "playlists" && activeScreen === "playlist-detail");
-      button.className = "nav-button" + (isActive ? " active" : "");
-    }
+    updateSoftkeys();
+  }
+
+  function updateClock() {
+    var now = new Date();
+    var time = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
+    document.getElementById("status-time").textContent = time;
+    Array.prototype.forEach.call(document.querySelectorAll(".device-preview .status-clock span:first-child"), function (node) {
+      node.textContent = time;
+    });
+  }
+
+  function seekBackground(currentTime, duration) {
+    var percentage = duration > 0 ? Math.max(0, Math.min(100, currentTime / duration * 100)) : 0;
+    return "linear-gradient(to right, #ff1e1e 0%, #ff1e1e " + percentage +
+      "%, #333 " + percentage + "%, #333 100%)";
   }
 
   function updateTime() {
     var currentLabel = document.getElementById("current-time");
-    var durationLabel = document.getElementById("duration-time");
+    var durationLabel = document.getElementById("remaining-time");
     var seek = document.getElementById("playback-seek");
     if (!currentLabel || !durationLabel || !seek) {
       return;
     }
     currentLabel.textContent = formatTime(audio.currentTime);
-    durationLabel.textContent = formatTime(audio.duration);
+    durationLabel.textContent = "-" + formatTime(Math.max(0, audio.duration - audio.currentTime));
     if (document.activeElement !== seek) {
       seek.max = String(isFinite(audio.duration) ? audio.duration : 100);
       seek.value = String(audio.currentTime || 0);
     }
+    seek.style.background = seekBackground(audio.currentTime || 0, audio.duration);
   }
 
   function scanLibrary() {
@@ -673,7 +730,7 @@
       if (generation !== scanGeneration) {
         return;
       }
-      tracks = foundTracks.sort(SonoraLibrary.compareTracks);
+      tracks = mergeTracks(foundTracks, persistedTracks).sort(SonoraLibrary.compareTracks);
       SonoraPlayer.setTracks(tracks);
       SonoraPlayer.restore();
       if (error && tracks.length) {
@@ -686,10 +743,219 @@
     });
   }
 
+  function mergeTracks(primary, additional) {
+    var merged = [];
+    var seen = {};
+    (primary || []).concat(additional || []).forEach(function (track) {
+      if (track && !seen[track.id]) {
+        seen[track.id] = true;
+        merged.push(track);
+      }
+    });
+    return merged;
+  }
+
+  function restoreImportedTracks() {
+    SamsaraMusicStore.list(function (error, records) {
+      if (error) {
+        global.console.warn("Unable to restore imported audio files.", error);
+        setStatus("Imported music could not be restored: " + error.message);
+        return;
+      }
+      persistedTracks = records.filter(function (record) {
+        return record && record.file;
+      }).map(function (record) {
+        importedTrackIds[record.id] = true;
+        return record;
+      });
+      tracks = mergeTracks(tracks, persistedTracks).sort(SonoraLibrary.compareTracks);
+      SonoraPlayer.setTracks(tracks);
+      SonoraPlayer.restore();
+      render();
+      if (persistedTracks.length) {
+        setStatus("Restored " + persistedTracks.length + " imported track" +
+          (persistedTracks.length === 1 ? "" : "s"));
+      }
+    });
+  }
+
+  function durationForFile(file, callback) {
+    var probe = new global.Audio();
+    var url = global.URL.createObjectURL(file);
+    var settled = false;
+    function finish(duration) {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      probe.removeEventListener("loadedmetadata", loaded);
+      probe.removeEventListener("error", failed);
+      probe.src = "";
+      global.URL.revokeObjectURL(url);
+      callback(duration || 0);
+    }
+    function loaded() {
+      finish(isFinite(probe.duration) ? probe.duration : 0);
+    }
+    function failed() {
+      finish(0);
+    }
+    probe.addEventListener("loadedmetadata", loaded);
+    probe.addEventListener("error", failed);
+    probe.src = url;
+    probe.load();
+  }
+
+  function loadMusicFiles(fileList) {
+    var files = Array.prototype.slice.call(fileList || []);
+    var pending = 0;
+    var added = 0;
+    var allowed = /\.(mp3|flac|wav|ogg|opus|m4a|aac)$/i;
+    files = files.filter(function (file) {
+      return allowed.test(file.name || "");
+    });
+    if (!files.length) {
+      setStatus("Choose MP3, FLAC, WAV, OGG, AAC, or M4A files");
+      return;
+    }
+    pending = files.length;
+    setStatus("Reading " + files.length + " audio file" + (files.length === 1 ? "" : "s"));
+    function completeOne() {
+      pending -= 1;
+      if (pending === 0) {
+        tracks.sort(SonoraLibrary.compareTracks);
+        SonoraPlayer.setTracks(tracks);
+        SonoraPlayer.restore();
+        focusedTrackIndex = 0;
+        activeScreen = "library";
+        render();
+        setStatus(added + " track" + (added === 1 ? "" : "s") + " loaded");
+      }
+    }
+    files.forEach(function (file) {
+      var sourcePath = file.webkitRelativePath || file.name;
+      var id = ["import", sourcePath, file.size, file.lastModified || 0].join("|");
+      var basename = file.name.replace(/^.*[\\/]/, "").replace(/\.[^.]+$/, "");
+      var splitName = /^(.+?)\s+-\s+(.+)$/.exec(basename);
+      if (importedTrackIds[id]) {
+        completeOne();
+        return;
+      }
+      var track = {
+        id: id,
+        name: file.name,
+        title: splitName ? splitName[2] : basename,
+        artist: splitName ? splitName[1] : "Unknown artist",
+        album: "Local music",
+        type: file.type || "",
+        size: file.size || 0,
+        file: file,
+        folder: file.webkitRelativePath ? file.webkitRelativePath.replace(/\\/g, "/").replace(/\/[^/]+$/, "") : "Local music"
+      };
+      importedTrackIds[id] = true;
+      SonoraMetadata.read(file, function (metadataError, metadata) {
+        if (metadataError) {
+          global.console.warn("Unable to read metadata for " + file.name + ".", metadataError);
+        } else {
+          track.title = metadata.title || track.title;
+          track.artist = metadata.artist || track.artist;
+          track.album = metadata.album || track.album;
+          track.artwork = metadata.artwork || null;
+        }
+        durationForFile(file, function (duration) {
+          track.duration = duration;
+          tracks.push(track);
+          SamsaraMusicStore.save(track, function (saveError) {
+            if (saveError) {
+              global.console.warn("Unable to persist imported audio file " + file.name + ".", saveError);
+              setStatus(file.name + " loaded, but could not be saved for next time");
+            } else {
+              persistedTracks.push(track);
+            }
+          });
+          added += 1;
+          completeOne();
+        });
+      });
+    });
+  }
+
+  function playSelectedLibraryTrack() {
+    var ordered = tracks.slice().sort(SonoraLibrary.compareTracks);
+    if (!ordered.length) {
+      filePicker.click();
+      return;
+    }
+    focusedTrackIndex = Math.max(0, Math.min(focusedTrackIndex, ordered.length - 1));
+    SonoraPlayer.setQueue(ordered, ordered[focusedTrackIndex]);
+    activeScreen = "now-playing";
+    render();
+  }
+
+  function setVolumeFromKey(direction) {
+    var volume = SonoraPlayer.getState().volume;
+    SonoraPlayer.setVolume(Math.max(0, Math.min(1, volume + direction / 14)));
+    playerFocusIndex = 2;
+    render();
+  }
+
+  function activateSetting() {
+    var names = ["Flat", "Bass Boost", "Vocal", "Nothing Dot", "Treble"];
+    if (focusedSettingIndex === 1) {
+      filePicker.click();
+      return;
+    }
+    var equalizer = SonoraPlayer.getState().equalizer;
+    var current = names.indexOf(equalizer.preset);
+    var nextPreset = names[(current + 1) % names.length];
+    SonoraPlayer.setEqualizer({
+      enabled: true,
+      preset: nextPreset,
+      bands: playerPresets[nextPreset]
+    });
+    setStatus(nextPreset + (SonoraPlayer.isEqualizerAvailable() ? " EQ enabled" : " preset saved; Web Audio unavailable"));
+  }
+
   function activate(action, index, source) {
     var track;
     source = source || document.activeElement;
-    if (action === "navigate") {
+    var playerControl = source && source.getAttribute ? source.getAttribute("data-player-control") : null;
+    var preview = source && source.closest ? source.closest("[data-preview]") : null;
+    if (playerControl !== null && playerControl !== "scrubber") {
+      playerFocusIndex = Number(playerControl);
+    }
+    if (preview && presentationBoard) {
+      activeScreen = preview.getAttribute("data-preview");
+    }
+    if (action === "toggle-board") {
+      presentationBoard = !presentationBoard;
+      render();
+    } else if (action === "soft-left") {
+      if (activeScreen === "now-playing") {
+        activeScreen = "settings";
+      } else if (activeScreen === "library") {
+        playSelectedLibraryTrack();
+      } else if (activeScreen === "settings") {
+        activateSetting();
+      }
+      render();
+    } else if (action === "soft-right") {
+      activeScreen = activeScreen === "now-playing" ? "library" : "now-playing";
+      render();
+    } else if (action === "select-track") {
+      focusedTrackIndex = Number(source.getAttribute("data-visible-index"));
+      render();
+    } else if (action === "select-setting") {
+      focusedSettingIndex = Number(source.getAttribute("data-setting-index"));
+      activateSetting();
+      render();
+    } else if (action === "load-music") {
+      filePicker.click();
+    } else if (action === "volume-toggle") {
+      var currentVolume = SonoraPlayer.getState().volume;
+      SonoraPlayer.setVolume(currentVolume >= 1 ? 0 : Math.min(1, currentVolume + 1 / 14));
+      render();
+    } else if (action === "navigate") {
       activeScreen = source.getAttribute("data-screen");
       selectedGroup = null;
       render();
@@ -798,12 +1064,16 @@
     }
     return {
       8: "Backspace",
+      9: "Tab",
       13: "Enter",
       32: " ",
       37: "ArrowLeft",
       38: "ArrowUp",
       39: "ArrowRight",
-      40: "ArrowDown"
+      40: "ArrowDown",
+      81: "q",
+      112: "F1",
+      113: "F2"
     }[event.keyCode] || "";
   }
 
@@ -823,52 +1093,105 @@
     elements[index].focus();
   }
 
-  screen.addEventListener("click", function (event) {
+  appScreen.addEventListener("click", function (event) {
     var target = event.target;
     var action;
-    while (target && target !== screen && !target.getAttribute("data-action")) {
+    while (target && target !== appScreen && !target.getAttribute("data-action")) {
       target = target.parentNode;
     }
-    if (target && target !== screen) {
+    if (target && target !== appScreen) {
       action = target.getAttribute("data-action");
       activate(action, Number(target.getAttribute("data-index")), target);
     }
   });
 
-  document.querySelector(".bottom-nav").addEventListener("click", function (event) {
-    var target = event.target;
-    if (target && target.getAttribute("data-screen")) {
-      activeScreen = target.getAttribute("data-screen");
-      render();
-    }
+  document.getElementById("softkey-left").addEventListener("click", function () {
+    activate("soft-left", 0, this);
+  });
+  document.getElementById("softkey-right").addEventListener("click", function () {
+    activate("soft-right", 0, this);
+  });
+  document.getElementById("presentation-toggle").addEventListener("click", function () {
+    activate("toggle-board", 0, this);
+  });
+  filePicker.addEventListener("change", function () {
+    loadMusicFiles(filePicker.files);
+    filePicker.value = "";
   });
 
   document.addEventListener("keydown", function (event) {
     var focused = document.activeElement;
     var key = keyName(event);
-    if (key === "Backspace" || key === "Escape") {
-      if (selectedGroup !== null) {
-        selectedGroup = null;
-        render();
-        event.preventDefault();
-      } else if (activeScreen === "playlist-detail") {
-        activeScreen = "playlists";
-        render();
-        event.preventDefault();
-      } else if (activeScreen !== "library") {
-        activeScreen = "library";
-        render();
-        event.preventDefault();
-      }
+    if (key === "Tab") {
+      presentationBoard = !presentationBoard;
+      render();
+      event.preventDefault();
+      return;
+    }
+    if (key === "SoftLeft" || key === "F1" || key.toLowerCase() === "q") {
+      activate("soft-left");
+      event.preventDefault();
+      return;
+    }
+    if (key === "SoftRight" || key === "F2" || key === "Backspace" || key === "Escape") {
+      activate("soft-right");
+      event.preventDefault();
       return;
     }
     if (key === "ArrowDown" || key === "ArrowUp") {
-      moveFocus(key === "ArrowDown" ? 1 : -1);
+      if (activeScreen === "now-playing") {
+        setVolumeFromKey(key === "ArrowUp" ? 1 : -1);
+      } else if (activeScreen === "library") {
+        focusedTrackIndex = Math.max(0, Math.min(tracks.length - 1,
+          focusedTrackIndex + (key === "ArrowDown" ? 1 : -1)));
+        render();
+        var focusedRow = appScreen.querySelector(".matrix-track-row.focused");
+        if (focusedRow && focusedRow.scrollIntoView) {
+          focusedRow.scrollIntoView(false);
+        }
+      } else if (activeScreen === "settings") {
+        focusedSettingIndex = focusedSettingIndex === 0 ? 1 : 0;
+        render();
+      } else {
+        moveFocus(key === "ArrowDown" ? 1 : -1);
+      }
+      event.preventDefault();
+      return;
+    }
+    if ((key === "ArrowLeft" || key === "ArrowRight") && activeScreen === "now-playing") {
+      if (focused === appScreen.querySelector("#playback-seek") || playerFocusIndex === 5) {
+        SonoraPlayer.seek(audio.currentTime + (key === "ArrowRight" ? 5 : -5));
+      } else {
+        playerFocusIndex = (playerFocusIndex + (key === "ArrowRight" ? 1 : 5)) % 6;
+        render();
+        var control = playerFocusIndex === 5 ? appScreen.querySelector("#playback-seek") :
+          appScreen.querySelector('[data-player-control="' + playerFocusIndex + '"]');
+        if (control) {
+          control.focus();
+        }
+      }
       event.preventDefault();
       return;
     }
     if (key === "Enter") {
-      if (focused && (focused.getAttribute("data-action") || focused.getAttribute("data-screen"))) {
+      if (activeScreen === "library") {
+        playSelectedLibraryTrack();
+      } else if (activeScreen === "settings") {
+        activateSetting();
+        render();
+      } else if (activeScreen === "now-playing") {
+        if (focused && focused.id === "playback-seek") {
+          event.preventDefault();
+          return;
+        }
+        var control = appScreen.querySelector('[data-player-control="' + playerFocusIndex + '"]');
+        if (control) {
+          control.click();
+        } else {
+          SonoraPlayer.togglePlay();
+          render();
+        }
+      } else if (focused && focused.getAttribute("data-action")) {
         focused.click();
       } else {
         moveFocus(1);
@@ -876,15 +1199,7 @@
       event.preventDefault();
       return;
     }
-    if (key === "ArrowLeft" && activeScreen === "now-playing") {
-      SonoraPlayer.previous();
-      render();
-      event.preventDefault();
-    } else if (key === "ArrowRight" && activeScreen === "now-playing") {
-      SonoraPlayer.next();
-      render();
-      event.preventDefault();
-    } else if (key === " " && activeScreen === "now-playing") {
+    if (key === " " && activeScreen === "now-playing") {
       SonoraPlayer.togglePlay();
       render();
       event.preventDefault();
@@ -903,7 +1218,7 @@
   SonoraPlayer.init(audio, state, {
     track: render,
     time: function () {
-      if (activeScreen === "now-playing") {
+      if (activeScreen === "now-playing" || presentationBoard) {
         updateTime();
       }
     },
@@ -917,5 +1232,8 @@
   });
 
   render();
+  updateClock();
+  global.setInterval(updateClock, 30000);
   scanLibrary();
+  restoreImportedTracks();
 }(window));

@@ -4,6 +4,7 @@
   var audio = null;
   var tracks = [];
   var queueTracks = [];
+  var baseQueueTracks = [];
   var state = null;
   var currentTrack = null;
   var currentIndex = -1;
@@ -15,7 +16,7 @@
   var equalizerFilters = [];
   var equalizerAvailable = false;
   var interruptedPlayback = false;
-  var frequencies = [60, 250, 1000, 4000, 12000];
+  var frequencies = [60, 230, 910, 3600, 14000];
 
   function notify(name) {
     if (callbacks[name]) {
@@ -119,7 +120,7 @@
   }
 
   function playTrack(track, startAt) {
-    var index = tracks.indexOf(track);
+    var index = queueTracks.indexOf(track);
     var nextUrl;
 
     if (!track || !track.file) {
@@ -131,9 +132,7 @@
     }
 
     savePosition();
-    if (index !== -1) {
-      currentIndex = index;
-    }
+    currentIndex = index !== -1 ? index : tracks.indexOf(track);
     currentTrack = track;
     rememberTrack(track);
     state.position = 0;
@@ -167,22 +166,15 @@
     if (!queueTracks.length) {
       return;
     }
-    if (state.shuffle && queueTracks.length > 1) {
-      index = Math.floor(Math.random() * queueTracks.length);
-      if (index === currentIndex) {
-        index = (index + 1) % queueTracks.length;
+    index = currentIndex + 1;
+    if (index >= queueTracks.length) {
+      if (state.repeat !== "all") {
+        audio.pause();
+        audio.currentTime = 0;
+        notify("time");
+        return;
       }
-    } else {
-      index = currentIndex + 1;
-      if (index >= queueTracks.length) {
-        if (state.repeat !== "all") {
-          audio.pause();
-          audio.currentTime = 0;
-          notify("time");
-          return;
-        }
-        index = 0;
-      }
+      index = 0;
     }
     playTrack(queueTracks[index], 0);
   }
@@ -205,13 +197,14 @@
 
   function setTracks(newTracks) {
     tracks = newTracks || [];
-    queueTracks = tracks.slice();
+    baseQueueTracks = tracks.slice();
+    queueTracks = state.shuffle ? shuffleQueue(baseQueueTracks, currentTrack) : baseQueueTracks.slice();
     currentIndex = -1;
     if (state.currentId) {
       tracks.some(function (track, index) {
         if (track.id === state.currentId) {
-          currentIndex = index;
           currentTrack = track;
+          currentIndex = queueTracks.indexOf(track);
           return true;
         }
         return false;
@@ -238,8 +231,29 @@
 
   function toggleShuffle() {
     state.shuffle = !state.shuffle;
+    if (state.shuffle) {
+      queueTracks = shuffleQueue(baseQueueTracks, currentTrack);
+    } else {
+      queueTracks = baseQueueTracks.slice();
+    }
+    currentIndex = currentTrack ? queueTracks.indexOf(currentTrack) : -1;
     SonoraStorage.save(state);
     notify("track");
+  }
+
+  function shuffleQueue(source, preserveTrack) {
+    var current = preserveTrack && source.indexOf(preserveTrack) !== -1 ? preserveTrack : null;
+    var remaining = source.filter(function (track) { return track !== current; });
+    var i;
+    var randomIndex;
+    var temporary;
+    for (i = remaining.length - 1; i > 0; i -= 1) {
+      randomIndex = Math.floor(Math.random() * (i + 1));
+      temporary = remaining[i];
+      remaining[i] = remaining[randomIndex];
+      remaining[randomIndex] = temporary;
+    }
+    return current ? [current].concat(remaining) : remaining;
   }
 
   function cycleRepeat() {
@@ -317,7 +331,7 @@
     })[0];
     if (track) {
       currentTrack = track;
-      currentIndex = tracks.indexOf(track);
+      currentIndex = queueTracks.indexOf(track);
       notify("track");
     }
   }
@@ -421,7 +435,8 @@
   }
 
   function setQueue(newQueue, startTrack) {
-    queueTracks = (newQueue || []).slice();
+    baseQueueTracks = (newQueue || []).slice();
+    queueTracks = state.shuffle ? shuffleQueue(baseQueueTracks, startTrack || currentTrack) : baseQueueTracks.slice();
     currentIndex = -1;
     if (startTrack) {
       playTrack(startTrack, 0);
@@ -437,6 +452,7 @@
     }
     item = queueTracks.splice(from, 1)[0];
     queueTracks.splice(to, 0, item);
+    baseQueueTracks = queueTracks.slice();
     currentIndex = queueTracks.indexOf(currentTrack);
     notify("queue");
     return true;
@@ -469,7 +485,7 @@
       }
     },
     setVolume: function (value) {
-      audio.volume = Math.max(0, Math.min(1, value));
+      audio.volume = Math.max(0, Math.min(1, Math.round(value * 14) / 14));
       state.volume = audio.volume;
       SonoraStorage.save(state);
     },

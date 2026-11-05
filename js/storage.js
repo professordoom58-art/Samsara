@@ -11,7 +11,7 @@
       playCounts: {},
       currentId: null,
       position: 0,
-      volume: 0.8,
+      volume: 0.7,
       shuffle: false,
       repeat: "off",
       playlists: [],
