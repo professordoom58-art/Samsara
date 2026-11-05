@@ -655,14 +655,13 @@ body {
   width: 320px;
   height: 240px;
   max-width: none;
-  grid-template-rows: 20px minmax(0, 1fr) 24px;
+  grid-template-rows: minmax(0, 1fr) 24px;
   margin: 0;
   overflow: hidden;
   background: #000;
   border: 0;
 }
 
-.status-bar,
 .softkey-bar {
   z-index: 3;
   display: flex;
@@ -672,70 +671,6 @@ body {
   background: #000;
   color: #fff;
   font: 10px/1 "JetBrains Mono", Consolas, monospace;
-}
-
-.status-bar {
-  border-bottom: 1px solid #262626;
-}
-
-.status-network,
-.status-clock {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.signal-bars {
-  display: inline-flex;
-  height: 10px;
-  align-items: flex-end;
-  gap: 1px;
-}
-
-.signal-bars i {
-  display: block;
-  width: 2px;
-  background: #fff;
-}
-
-.signal-bars i:nth-child(1) { height: 3px; }
-.signal-bars i:nth-child(2) { height: 5px; }
-.signal-bars i:nth-child(3) { height: 7px; }
-.signal-bars i:nth-child(4) { height: 9px; }
-
-.battery-icon {
-  position: relative;
-  display: inline-block;
-  width: 15px;
-  height: 8px;
-  border: 1px solid #aaa;
-}
-
-.battery-icon::after {
-  position: absolute;
-  top: 2px;
-  right: -3px;
-  width: 2px;
-  height: 3px;
-  background: #aaa;
-  content: "";
-}
-
-.battery-level {
-  display: block;
-  width: 68%;
-  height: 100%;
-  background: #fff;
-}
-
-.presentation-toggle {
-  width: 15px;
-  height: 14px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #777;
-  font-size: 13px;
 }
 
 .screen {
@@ -1334,7 +1269,6 @@ body {
   background: transparent;
 }
 
-.presentation-board-mode > .app-shell > .status-bar,
 .presentation-board-mode > .app-shell > .softkey-bar {
   display: none;
 }
@@ -1361,7 +1295,7 @@ body {
   width: 320px;
   height: 240px;
   flex: 0 0 320px;
-  grid-template-rows: 20px minmax(0, 1fr) 24px;
+  grid-template-rows: minmax(0, 1fr) 24px;
   overflow: visible;
   border: 1px solid #444;
   background: #000;
@@ -1389,5 +1323,5 @@ body {
 body.now-playing-active .app-shell {
   width: 320px;
   height: 240px;
-  grid-template-rows: 20px minmax(0, 1fr) 24px;
+  grid-template-rows: minmax(0, 1fr) 24px;
 }

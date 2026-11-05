@@ -594,9 +594,6 @@
 
   function renderDevicePreview(view, label) {
     var device = makeElement("section", "device-preview");
-    var header = makeElement("header", "status-bar");
-    var network = makeElement("div", "status-network");
-    var clock = makeElement("div", "status-clock");
     var content = makeElement("main", "screen");
     var footer = makeElement("footer", "softkey-bar");
     var left = makeButton(view === "now-playing" ? "Options" : (view === "library" ? "Play" : "Select"), "soft-left", "softkey");
@@ -604,24 +601,10 @@
     var tag = makeElement("div", "preview-label", label);
 
     device.setAttribute("data-preview", view);
-    var bars = makeElement("span", "signal-bars", "");
-    var barIndex;
-    for (barIndex = 0; barIndex < 4; barIndex += 1) {
-      bars.appendChild(makeElement("i", ""));
-    }
-    network.appendChild(bars);
-    network.appendChild(makeElement("span", "", "4G"));
-    clock.appendChild(makeElement("span", "", document.getElementById("status-time").textContent));
-    var battery = makeElement("span", "battery-icon", "");
-    battery.appendChild(makeElement("span", "battery-level", ""));
-    clock.appendChild(battery);
-    header.appendChild(network);
-    header.appendChild(clock);
     footer.appendChild(left);
     footer.appendChild(makeElement("span", "dpad-indicator", ""));
     footer.appendChild(right);
     device.appendChild(tag);
-    device.appendChild(header);
     device.appendChild(content);
     device.appendChild(footer);
 
@@ -686,15 +669,6 @@
       renderLibrary();
     }
     updateSoftkeys();
-  }
-
-  function updateClock() {
-    var now = new Date();
-    var time = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
-    document.getElementById("status-time").textContent = time;
-    Array.prototype.forEach.call(document.querySelectorAll(".device-preview .status-clock span:first-child"), function (node) {
-      node.textContent = time;
-    });
   }
 
   function seekBackground(currentTime, duration) {
@@ -1111,9 +1085,6 @@
   document.getElementById("softkey-right").addEventListener("click", function () {
     activate("soft-right", 0, this);
   });
-  document.getElementById("presentation-toggle").addEventListener("click", function () {
-    activate("toggle-board", 0, this);
-  });
   filePicker.addEventListener("change", function () {
     loadMusicFiles(filePicker.files);
     filePicker.value = "";
@@ -1232,8 +1203,6 @@
   });
 
   render();
-  updateClock();
-  global.setInterval(updateClock, 30000);
   scanLibrary();
   restoreImportedTracks();
 }(window));

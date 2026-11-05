@@ -74,7 +74,7 @@ The distributable `dist\SAMSARA.wpk` is kept in Git; only the temporary ZIP used
 - Library search and sort, artists/albums/folders group views, recent/most-played/favourites, persistent named playlists with rename/delete/add/remove/reorder/play, and reorderable queue.
 - HTML audio playback, seek, previous/next, shuffle, repeat, keypad focus, and saved playback position/volume.
 - Five-band Web Audio EQ and presets where `AudioContext`/`BiquadFilterNode` are available; interruption handlers for KaiOS audio-channel events.
-- Fixed 320 × 240 Now Playing, Music Library, and Settings screens with a persistent status bar, softkeys, focus styling, and Tab-toggle presentation board.
+- Fixed 320 × 240 Now Playing, Music Library, and Settings screens that leave system indicators to KaiOS, with softkeys, focus styling, and Tab-toggle presentation board.
 - Explicit status messaging for codec errors and unsupported FLAC playback.
 
 FLAC metadata/artwork parsing is implemented, but FLAC audio decoding is not yet integrated. Background playback and all Web Audio behavior require verification on target firmware.
